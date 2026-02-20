@@ -22,8 +22,6 @@ The core utilizes a classic RISC pipeline structure:
 4.  **MEM (Memory Access):** Handles Load/Store operations to Data Memory.
 5.  **WB (Write Back):** Updates the architectural state in the register file.
 
-
-
 ### Hardware Multithreading Extension
 To maximize throughput and hide latencies, the design incorporates:
 * **Quad-Banked Register Files:** Four independent contexts (RF0–RF3).
@@ -77,3 +75,35 @@ Used for: `ADD`, `SUB`, `MOV`, `CMP`, `LSL`
 * **Languages:** Verilog HDL, C, Assembly
 * **Tools:** ARM GNU Toolchain, Vivado/ISE, ModelSim
 * **Platform:** NetFPGA (Xilinx Virtex-based)
+
+---
+
+## 📊 Results & Verification
+The processor design was rigorously tested and validated using cycle-accurate RTL simulations in ModelSim prior to FPGA deployment. Key achievements include:
+
+### 1. Pipeline Hazard Resolution (Data Forwarding & Flush)
+Successfully implemented and verified a full Forwarding Unit to seamlessly handle Read-After-Write (RAW) data hazards. 
+
+<div align="center">
+  <img src="img/forwarding.jpg" width="800" alt="Data Forwarding Waveform">
+  <p><i>Figure 1: Forwarding Unit injecting memory read data directly into the ALU operand to resolve RAW hazards without stalling.</i></p>
+</div>
+
+Alongside data hazards, a robust hardware Pipeline Flush mechanism was introduced to prevent phantom instruction execution during branch operations (Control Hazards).
+
+<div align="center">
+  <img src="img/flush.jpg" width="800" alt="Pipeline Flush Waveform">
+  <p><i>Figure 2: Pipeline Flush mechanism correctly zeroing out the Write-Back enable signal (`wb_reg_write`) after a Branch is taken.</i></p>
+</div>
+
+### 2. Datapath Integrity
+Cycle-by-cycle waveform verification confirmed perfect instruction propagation across all 5 stages (IF, ID, EX, MEM, WB).
+
+<div align="center">
+  <img src="img/propagation.jpg" width="800" alt="Instruction Propagation">
+  <p><i>Figure 3: Clean staircase instruction propagation through the 5-stage pipeline.</i></p>
+</div>
+
+### 3. Zero-Overhead Multithreading & Algorithm Execution
+* **Multithreading:** Verified the 4-way round-robin hardware scheduler. Waveform analysis confirms the independent execution of four threads—each utilizing its dedicated Register File bank and Program Counter—with zero clock cycle penalty for context switching.
+* **Algorithm Execution:** Successfully executed compiler-generated ARM assembly for complex algorithms (e.g., Bubble Sort). Validated memory state dumps confirm 100% accuracy in Load/Store operations and branching logic.
