@@ -1,27 +1,30 @@
 `timescale 1 ns / 100 ps
-module pc(clk, rstb, wen, thread_id, next_pc, current_pc);
-    input clk;
-    input rstb;
-    input wen;              
-    input [1:0] thread_id;
-    input [8:0] next_pc;
+module pc(clk, rstb, wen, thread_id, next_pc, ex_branch, ex_thread_id, ex_branch_target, current_pc);
+    input clk, rstb, wen, ex_branch;
+    input [1:0] thread_id, ex_thread_id;
+    input [8:0] next_pc, ex_branch_target;
     output reg [8:0] current_pc;
 
     reg [8:0] pc_regs [3:0]; 
-    always @(*) begin
-        current_pc = pc_regs[thread_id];
-    end
-
     integer i;
+
+    always @(*) current_pc = pc_regs[thread_id];
+
     always @(posedge clk or negedge rstb) begin
-        if (!rstb) begin
-            for (i = 0; i < 4; i = i + 1)
-                pc_regs[i] <= 9'b0;
-        end 
-        else if (wen) begin
+    if (!rstb) begin
+        for (i = 0; i < 4; i = i + 1)
+            pc_regs[i] <= 9'b0;
+    end 
+    else begin
+        if (wen) begin
             pc_regs[thread_id] <= next_pc;
         end
+
+        if (ex_branch) begin
+            pc_regs[ex_thread_id] <= ex_branch_target;
+        end
     end
+end
 endmodule
 
 `timescale 1 ns / 100 ps
@@ -33,11 +36,11 @@ module imem_bram (clk, addr, inst);
     reg [31:0] rom_array [0:511];
 
     initial begin
-        $readmemh("machine_code.hex", rom_array);
+        $readmemh("inst.mem", rom_array);
     end
 
     always @(posedge clk) begin
-        inst <= rom_array[addr];
+        inst <= rom_array[addr[8:2]];
     end
 endmodule
 
@@ -541,6 +544,28 @@ module mem_wb_reg (
             wb_read_data  <= mem_read_data;
             wb_wa         <= mem_wa;
             wb_thread_id  <= mem_thread_id;
+        end
+    end
+endmodule
+
+`timescale 1 ns / 100 ps
+module barrel_shifter (
+    input  wire [31:0] data_in,   
+    input  wire [4:0]  shamt5,   
+    input  wire [1:0]  sh_type,   
+    output reg  [31:0] data_out   
+);
+
+    always @(*) begin
+        if (shamt5 == 5'b0) begin
+            data_out = data_in;
+        end else begin
+            case (sh_type)
+                2'b00: data_out = data_in << shamt5;                 
+                2'b01: data_out = data_in >> shamt5;                 
+                2'b10: data_out = $signed(data_in) >>> shamt5;       
+                2'b11: data_out = (data_in >> shamt5) | (data_in << (32 - shamt5));
+            endcase
         end
     end
 endmodule
