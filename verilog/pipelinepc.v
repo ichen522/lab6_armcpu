@@ -26,6 +26,13 @@ end
 wire [1:0] thread_id = thread_id_reg;
 assign pc_plus4 = current_pc + 9'd4;
 assign next_pc = pc_plus4; 
+wire [1:0]  ex_thread_id;
+wire        actual_branch;
+wire        wb_reg_write;
+wire [3:0]  wb_wa;
+wire [1:0]  wb_thread_id;
+wire [31:0] wb_wd;
+
 pc PC (
     .clk(clk),.rstb(rstb),.wen(1'b1), .thread_id(thread_id), .next_pc(next_pc),
     .ex_branch(actual_branch),.ex_thread_id(ex_thread_id),.ex_branch_target(benq_addr),
@@ -57,6 +64,7 @@ wire [31:0] id_r1data;
 wire [31:0] id_r2data;
 wire [31:0] id_imm_out;
 wire [3:0] id_rg2 = (id_mem_write) ? id_instr[15:12] : id_instr[3:0];
+
 
 control_unit CU (
     .instr(id_instr),
@@ -96,7 +104,7 @@ wire [31:0] ex_r1data;
 wire [31:0] ex_r2data;
 wire [31:0] ex_imm_out;
 wire [3:0] ex_wa;
-wire [1:0] ex_thread_id;
+
 
 
 id_ex_reg ID_EX (
@@ -161,7 +169,7 @@ condition_check CondCheck (
     .pass(condition_pass)
 );
 
-wire actual_branch     = ex_branch    & condition_pass;
+assign actual_branch     = ex_branch    & condition_pass;
 wire actual_reg_write  = ex_reg_write & condition_pass;
 wire actual_mem_write  = ex_mem_write & condition_pass;
 
@@ -201,12 +209,10 @@ data_memory DMem (
 
 //---------------------------------------------WB -----------------------------------------------------------
 
-wire wb_reg_write;
+
 wire wb_mem_to_reg;
 wire [31:0] wb_alu_result;
 wire [31:0] wb_read_data;
-wire [3:0]  wb_wa;
-wire [1:0]  wb_thread_id;
 
 mem_wb_reg MEM_WB (
     .clk(clk),.rstb(rstb),.mem_reg_write(mem_reg_write),.mem_mem_to_reg(mem_mem_to_reg),
@@ -216,7 +222,7 @@ mem_wb_reg MEM_WB (
     .wb_read_data(wb_read_data),.wb_wa(wb_wa),.wb_thread_id(wb_thread_id)
 );
 
-wire [31:0] wb_wd;
+
 assign wb_wd = (wb_mem_to_reg) ? wb_read_data : wb_alu_result;
 
 
