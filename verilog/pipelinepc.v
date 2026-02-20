@@ -46,7 +46,7 @@ imem_bram  IMEM(
 
 
 if_id_reg IF_ID(
-    .clk(clk),.rstb(rstb),.en(1'b1), .flush(1'b0), .if_pc(next_pc), .if_instr(inst), .if_thread_id(thread_id),
+    .clk(clk),.rstb(rstb),.en(1'b1), .flush(actual_branch), .if_pc(next_pc), .if_instr(inst), .if_thread_id(thread_id),
     
     .id_pc(id_pc), .id_instr(id_instr), .id_thread_id(id_thread_id));
 
@@ -108,7 +108,7 @@ wire [3:0] ex_wa;
 
 
 id_ex_reg ID_EX (
-    .clk(clk), .rstb(rstb), .en(1'b1), .flush(1'b0), 
+    .clk(clk), .rstb(rstb), .en(1'b1), .flush(actual_branch), 
     .id_alu_src(id_alu_src), .id_alu_ctrl(id_alu_ctrl), .id_mem_read(id_mem_read),
     .id_mem_write(id_mem_write), .id_reg_write(id_reg_write), .id_mem_to_reg(id_mem_to_reg),
     .id_branch(id_branch), .id_cond(id_cond), .id_pc(id_pc), .id_instr(id_instr),
