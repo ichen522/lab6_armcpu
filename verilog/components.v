@@ -126,7 +126,7 @@ ex_pc, ex_instr,ex_r1data, ex_r2data,ex_imm_out, ex_wa,ex_thread_id
     output reg  [1:0]  ex_thread_id;
 
     always @(posedge clk or negedge rstb) begin
-        if (!rstb || flush) begin
+        if (!rstb) begin
             ex_mem_read   <= 0;
             ex_mem_write  <= 0;
             ex_reg_write  <= 0;
@@ -136,7 +136,24 @@ ex_pc, ex_instr,ex_r1data, ex_r2data,ex_imm_out, ex_wa,ex_thread_id
             ex_alu_src    <= 0;
             ex_mem_to_reg <= 0;
             ex_cond       <= 4'b1110; 
-            ex_instr      <= 32'hE1A00000; 
+            ex_instr      <= 32'hE1A00000;
+            ex_pc         <= 9'b0;
+            ex_r1data     <= 32'b0;
+            ex_r2data     <= 32'b0;
+            ex_imm_out    <= 32'b0;
+            ex_wa         <= 4'b0;
+        end 
+        else if (flush) begin
+            ex_mem_read   <= 0;
+            ex_mem_write  <= 0;
+            ex_reg_write  <= 0;
+            ex_branch     <= 0;
+            ex_thread_id  <= 2'b0;
+            ex_alu_ctrl   <= 4'b0;
+            ex_alu_src    <= 0;
+            ex_mem_to_reg <= 0;
+            ex_cond       <= 4'b1110; 
+            ex_instr      <= 32'hE1A00000;
         end 
         else if (en) begin
             ex_alu_src    <= id_alu_src;
