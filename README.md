@@ -1,17 +1,79 @@
-## 🚀 Introduction
+# Quad HW-Threaded ARM ISA-Compatible Processor on NetFPGA
 
-This project presents the design and implementation of a **5-stage pipelined ARM-compatible processor core** with **hardware-supported quad-threading**. The processor is capable of executing a subset of the ARM Instruction Set Architecture (ISA) and is synthesized on a **NetFPGA platform**.
+## 📌 Project Overview
+This project features a **5-stage pipelined ARM ISA-compatible processor** implemented in Verilog and deployed on the NetFPGA platform. A key architectural highlight is the integration of **hardware support for four simultaneous hardware threads (SMT)**, enabling zero-overhead context switching.
 
-The core architecture follows the classic **IF–ID–EX–MEM–WB pipeline model**, enabling efficient instruction throughput while maintaining a clean and modular datapath design. Beyond a standard single-thread pipeline, this processor introduces **zero-overhead hardware multithreading**, allowing four independent threads to execute concurrently within a single core.
+The processor executes a robust subset of the **ARMv4T (ARM7TDMI)** instruction set, capable of running compiler-generated C programs, including complex benchmarks like bubble sort.
 
-To bridge software and hardware, ARM-compiled C programs (including a sorting application) were analyzed at the assembly level, and the required instruction subset was implemented directly in Verilog. The processor supports arithmetic, memory, and branch operations necessary to execute compiled programs correctly.
+### Key Objectives
+* **Hardware/Software Co-design:** Translating C algorithms into ARM assembly via the `arm-none-eabi` toolchain.
+* **Architectural Design:** Developing a custom 5-stage datapath and control unit with hazard handling.
+* **Concurrency:** Implementing a round-robin hardware scheduler for 4-thread interleaving.
+* **Hardware Verification:** Validating execution flow and memory integrity on NetFPGA silicon.
 
-This project demonstrates:
+---
 
-- ⚙️ Custom datapath and control unit design  
-- 🧠 ARM instruction decoding and execution  
-- 🧵 Hardware-level multithreading architecture  
-- 🚀 Zero-overhead context switching  
-- 🔬 Successful execution and verification of compiled C programs  
+## 🏗️ Processor Architecture
+The core utilizes a classic RISC pipeline structure:
 
-Overall, this work highlights the integration of computer architecture principles, digital hardware design, and compiler-level instruction analysis into a functional multi-threaded processor core.
+1.  **IF (Instruction Fetch):** Fetches 32-bit instructions from IMEM based on the current Thread ID.
+2.  **ID (Instruction Decode):** Decodes opcode and manages the banked Register File (4 contexts).
+3.  **EX (Execute):** Performs ALU operations, address calculations, and branch target evaluation.
+4.  **MEM (Memory Access):** Handles Load/Store operations to Data Memory.
+5.  **WB (Write Back):** Updates the architectural state in the register file.
+
+
+
+### Hardware Multithreading Extension
+To maximize throughput and hide latencies, the design incorporates:
+* **Quad-Banked Register Files:** Four independent contexts (RF0–RF3).
+* **Thread-Specific PCs:** Four independent Program Counters.
+* **Zero-Overhead Switching:** Thread selection logic allows the processor to switch contexts every clock cycle without the software-level "save/restore" penalty.
+
+---
+
+## 📜 ARM Instruction Encoding (A32)
+All instructions are fixed-width 32-bit (ARM Mode).
+
+### 1. Instruction Fields
+| Bits | Field | Description |
+|:---:|:---:|:---|
+| **31–28** | `cond` | Execution condition (e.g., `1110` for AL - Always) |
+| **27–0** | `instr` | Instruction-specific payload |
+
+### 2. Data Processing Format
+Used for: `ADD`, `SUB`, `MOV`, `CMP`, `LSL`
+* **I (Bit 25):** Immediate flag.
+* **Opcode (24–21):** Defines the operation.
+* **Rn (19–16):** First source operand register.
+* **Rd (15–12):** Destination register.
+* **Operand2 (11–0):** Flexible second operand (Immediate or Shifted Register).
+
+### 3. Load/Store & Branch
+* **Memory:** Supports `LDR`/`STR` (Single) and `LDM`/`STM` (Multiple/Stack).
+* **Branch:** Target calculated as: $Target = PC + (SignExtend(offset) \ll 2)$.
+
+---
+
+## 🛠️ Supported ISA Subset
+| Category | Instructions |
+|:---|:---|
+| **Data Processing** | `ADD`, `SUB`, `MOV`, `CMP`, `LSL` |
+| **Memory/Stack** | `LDR`, `STR`, `LDM` (POP), `STM` (PUSH) |
+| **Flow Control** | `B`, `BGE`, `BLE`, `BX` |
+
+---
+
+## 💻 Software Workflow & Verification
+1.  **Compilation:** C source code is compiled using the `arm-none-eabi-gcc` toolchain.
+2.  **Assembling:** Assembly code is converted to hex-encoded machine code.
+3.  **Simulation:** Verified via Verilog testbenches (ModelSim/Vivado).
+4.  **Hardware Deployment:** Binary images loaded into NetFPGA BRAM.
+5.  **Validation:** Comparison of memory dumps (pre- vs. post-sort) and simultaneous execution of four independent threads.
+
+---
+
+## ⚙️ Technologies Used
+* **Languages:** Verilog HDL, C, Assembly
+* **Tools:** ARM GNU Toolchain, Vivado/ISE, ModelSim
+* **Platform:** NetFPGA (Xilinx Virtex-based)
